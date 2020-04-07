@@ -1,6 +1,34 @@
 append([], L, L).
 append([H|T], L2, [H|L3]) :- append(T, L2, L3).
 
+memberA(X, L) :- append(_, [X], FrontHalf), append(FrontHalf, _, L).
+
+set([], []).
+set([H|T], OutList) :-
+    member(H, T),
+    set(T, OutList).
+set([H|T], [H|OutList]) :-
+    not(member(H, T)),
+    set(T, OutList).
+
+% Accumulate version (reverses list but since it's a set presumably order doesn't matter): 
+accSet([H|T], A, R) :- 
+    member(H, T),
+    accSet(T, A, R).
+accSet([H|T], A, R) :-
+    not(member(H, T)),
+    accSet(T, [H|A], R).
+accSet([], A, A).
+accSetStart(L, R) :- accSet(L, [], R).
+
+flatten([], []).
+flatten([[]|T], Flat) :-
+    flatten(T, Flat).
+flatten([[H|TInner]|T], [H|Flat]) :-
+    flatten([TInner|T], Flat).
+flatten([H|T], [H|Flat]) :-
+    flatten(T, Flat).
+
 accRev([H|T], A, R) :- accRev(T, [H|A], R).
 accRev([], A, A).
 
