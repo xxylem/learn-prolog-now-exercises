@@ -1,125 +1,91 @@
-% Lexicon
-% lex(Word, Role,   Plurality,  Position).
-lex(the,    det,    _,          _).
-lex(a,      det,    singular,   _).
-lex(woman,  n,      singular,   _).
-lex(women,  n,      plural,     _).
-lex(man,    n,      singular,   _).
-lex(men,    n,      plural,     _).
-lex(shoots, v,      singular,   _).
-lex(shoot,  v,      plural,     _).
-lex(he,     pro,    singular,   subject).
-lex(him,    pro,    singular,   object).
-lex(she,    pro,    singular,   subject).
-lex(her,    pro,    singular,   object).
+% Lexicon (presumably there is a better way to do this, this is basically all relational tables joined into one big table.)
+% lex(Word,     Role,   Plurality,  Position,   Person,     AdjType).
+lex(the,        det,    _,          _,          _,          _).
+lex(a,          det,    singular,   _,          _,          _).
 
-% Rules
-s(s(NP, VP)) --> np(NP, subject, Plurality), vp(VP, Plurality).
+lex(woman,      n,      singular,   _,          _,          _).
+lex(women,      n,      plural,     _,          _,          _).
+lex(man,        n,      singular,   _,          _,          _).
+lex(men,        n,      plural,     _,          _,          _).
+lex(shower,     n,      singular,   _,          _,          _).
+lex(showers,    n,      plural,     _,          _,          _).
+lex(table,      n,      singular,   _,          _,          _).
+lex(tables,     n,      plural,     _,          _,          _).
 
-np(np(DET, N), Position, Plurality) --> 
-    det(DET, Plurality), 
-    n(N, Position, Plurality).
+lex(shoots,     v,      singular,   _,          third,      _).
+lex(shoot,      v,      _,          _,          Person,     _) :-
+    Person \= third.
+lex(shoot,  v,      Plurality,      _,          _,          _) :-
+    Plurality \= singular.
 
-vp(vp(V, NP), VerbPlurality) --> 
-    v(V, VerbPlurality), 
+lex(i,          pro,    singular,   subject,    first,      _).
+lex(me,         pro,    singular,   object,     first,      _).
+lex(we,         pro,    plural,     subject,    first,      _).
+lex(us,         pro,    plural,     object,     first,      _).
+lex(you,        pro,    _,          _,          second,     _).
+lex(he,         pro,    singular,   subject,    third,      _).
+lex(him,        pro,    singular,   object,     third,      _).
+lex(she,        pro,    singular,   subject,    third,      _).
+lex(her,        pro,    singular,   object,     third,      _).
+lex(it,         pro,    singular,   _,          third,      _).
+lex(they,       pro,    plural,     subject,    third,      _).
+lex(them,       pro,    plural,     object,     third,      _).
+
+lex(big,        adj,    _,          _,          _,          size).
+lex(fat,        adj,    _,          _,          _,          descriptive).
+lex(small,      adj,    _,          _,          _,          size).
+lex(frightened, adj,    _,          _,          _,          descriptive).
+
+lex(under,      p,      _,          _,          _,          _).
+lex(on,        p,      _,          _,          _,          _).
+
+% Rules (presumably these should be able to recurse infinitely, but I have just defined a few finite ones for now.)
+s(s(NP, VP, PP)) --> np(NP, Plurality, subject, Person), vp(VP, Plurality, Person), pp(PP, Plurality, Person).
+s(s(NP, VP)) --> np(NP, Plurality, subject, Person), vp(VP, Plurality, Person). % Is there a better way to say something is optional?
+
+np(np(DET, AP, N), Plurality, _, _) --> 
+    det(DET, Plurality),
+    ap(AP),
+    n(N, Plurality).
+np(np(PRO), Plurality, Position, Person) -->
+    pro(PRO, Plurality, Position, Person).
+
+vp(vp(V, NP), VerbPlurality, Person) --> 
+    v(V, VerbPlurality, Person), 
     % The noun phrase can have a different plurality,
     % the plurality of the verb refers back to the noun in
     % subject position.
-    np(NP, object, _). 
-vp(vp(V), VerbPlurality) --> v(V, VerbPlurality).
+    np(NP, _, object, _). 
+vp(vp(V), VerbPlurality, Person) --> v(V, VerbPlurality, Person).
+
+pp(pp(P, NP), Plurality, Person) -->
+    p(P),
+    np(NP, Plurality, object, Person).
+
+ap(ap(ADJ_SIZE, ADJ_DESCRIPTIVE)) -->
+    adj(ADJ_SIZE, size),
+    adj(ADJ_DESCRIPTIVE, descriptive).
+
+ap(ap(ADJ_DESCRIPTIVE)) -->
+    adj(ADJ_DESCRIPTIVE, descriptive).
+
+ap(ap(ADJ_SIZE)) -->
+    adj(ADJ_SIZE, size).
 
 det(det(Word), Plurality) --> 
-    [Word], {lex(Word, det, Plurality, _)}.
+    [Word], {lex(Word, det, Plurality, _, _, _)}.
 
-n(n(Word), Position, Plurality) --> 
-    [Word], {lex(Word, n, Plurality, Position)}.
+n(n(Word), Plurality) --> 
+    [Word], {lex(Word, n, Plurality, _, _, _)}.
 
-v(v(Word), Plurality) --> 
-    [Word], {lex(Word, v, Plurality, _)}.
+pro(pro(Word), Plurality, Position, Person) -->
+    [Word], {lex(Word, pro, Plurality, Position, Person, _)}.
 
-% Example trace to find all parse trees:
-% 2 ?- s(T, L, []).
-% T = s(np(det(the), n(woman)), vp(v(shoots), np(det(the), n(woman)))),
-% L = [the, woman, shoots, the, woman] ;
-% T = s(np(det(the), n(woman)), vp(v(shoots), np(det(the), n(women)))),
-% L = [the, woman, shoots, the, women] ;
-% T = s(np(det(the), n(woman)), vp(v(shoots), np(det(the), n(man)))),
-% L = [the, woman, shoots, the, man] ;
-% T = s(np(det(the), n(woman)), vp(v(shoots), np(det(the), n(men)))),
-% L = [the, woman, shoots, the, men] ;
-% T = s(np(det(the), n(woman)), vp(v(shoots), np(det(a), n(woman)))),
-% L = [the, woman, shoots, a, woman] ;
-% T = s(np(det(the), n(woman)), vp(v(shoots), np(det(a), n(man)))),
-% L = [the, woman, shoots, a, man] ;
-% T = s(np(det(the), n(woman)), vp(v(shoots))),
-% L = [the, woman, shoots] ;
-% T = s(np(det(the), n(women)), vp(v(shoot), np(det(the), n(woman)))),
-% L = [the, women, shoot, the, woman] ;
-% T = s(np(det(the), n(women)), vp(v(shoot), np(det(the), n(women)))),
-% L = [the, women, shoot, the, women] ;
-% T = s(np(det(the), n(women)), vp(v(shoot), np(det(the), n(man)))),
-% L = [the, women, shoot, the, man] ;
-% T = s(np(det(the), n(women)), vp(v(shoot), np(det(the), n(men)))),
-% L = [the, women, shoot, the, men] ;
-% T = s(np(det(the), n(women)), vp(v(shoot), np(det(a), n(woman)))),
-% L = [the, women, shoot, a, woman] ;
-% T = s(np(det(the), n(women)), vp(v(shoot), np(det(a), n(man)))),
-% L = [the, women, shoot, a, man] ;
-% T = s(np(det(the), n(women)), vp(v(shoot))),
-% L = [the, women, shoot] ;
-% T = s(np(det(the), n(man)), vp(v(shoots), np(det(the), n(woman)))),
-% L = [the, man, shoots, the, woman] ;
-% T = s(np(det(the), n(man)), vp(v(shoots), np(det(the), n(women)))),
-% L = [the, man, shoots, the, women] ;
-% T = s(np(det(the), n(man)), vp(v(shoots), np(det(the), n(man)))),
-% L = [the, man, shoots, the, man] ;
-% T = s(np(det(the), n(man)), vp(v(shoots), np(det(the), n(men)))),
-% L = [the, man, shoots, the, men] ;
-% T = s(np(det(the), n(man)), vp(v(shoots), np(det(a), n(woman)))),
-% L = [the, man, shoots, a, woman] ;
-% T = s(np(det(the), n(man)), vp(v(shoots), np(det(a), n(man)))),
-% L = [the, man, shoots, a, man] ;
-% T = s(np(det(the), n(man)), vp(v(shoots))),
-% L = [the, man, shoots] ;
-% T = s(np(det(the), n(men)), vp(v(shoot), np(det(the), n(woman)))),
-% L = [the, men, shoot, the, woman] ;
-% T = s(np(det(the), n(men)), vp(v(shoot), np(det(the), n(women)))),
-% L = [the, men, shoot, the, women] ;
-% T = s(np(det(the), n(men)), vp(v(shoot), np(det(the), n(man)))),
-% L = [the, men, shoot, the, man] ;
-% T = s(np(det(the), n(men)), vp(v(shoot), np(det(the), n(men)))),
-% L = [the, men, shoot, the, men] ;
-% T = s(np(det(the), n(men)), vp(v(shoot), np(det(a), n(woman)))),
-% L = [the, men, shoot, a, woman] ;
-% T = s(np(det(the), n(men)), vp(v(shoot), np(det(a), n(man)))),
-% L = [the, men, shoot, a, man] ;
-% T = s(np(det(the), n(men)), vp(v(shoot))),
-% L = [the, men, shoot] ;
-% T = s(np(det(a), n(woman)), vp(v(shoots), np(det(the), n(woman)))),
-% L = [a, woman, shoots, the, woman] ;
-% T = s(np(det(a), n(woman)), vp(v(shoots), np(det(the), n(women)))),
-% L = [a, woman, shoots, the, women] ;
-% T = s(np(det(a), n(woman)), vp(v(shoots), np(det(the), n(man)))),
-% L = [a, woman, shoots, the, man] ;
-% T = s(np(det(a), n(woman)), vp(v(shoots), np(det(the), n(men)))),
-% L = [a, woman, shoots, the, men] ;
-% T = s(np(det(a), n(woman)), vp(v(shoots), np(det(a), n(woman)))),
-% L = [a, woman, shoots, a, woman] ;
-% T = s(np(det(a), n(woman)), vp(v(shoots), np(det(a), n(man)))),
-% L = [a, woman, shoots, a, man] ;
-% T = s(np(det(a), n(woman)), vp(v(shoots))),
-% L = [a, woman, shoots] ;
-% T = s(np(det(a), n(man)), vp(v(shoots), np(det(the), n(woman)))),
-% L = [a, man, shoots, the, woman] ;
-% T = s(np(det(a), n(man)), vp(v(shoots), np(det(the), n(women)))),
-% L = [a, man, shoots, the, women] ;
-% T = s(np(det(a), n(man)), vp(v(shoots), np(det(the), n(man)))),
-% L = [a, man, shoots, the, man] ;
-% T = s(np(det(a), n(man)), vp(v(shoots), np(det(the), n(men)))),
-% L = [a, man, shoots, the, men] ;
-% T = s(np(det(a), n(man)), vp(v(shoots), np(det(a), n(woman)))),
-% L = [a, man, shoots, a, woman] ;
-% T = s(np(det(a), n(man)), vp(v(shoots), np(det(a), n(man)))),
-% L = [a, man, shoots, a, man] ;
-% T = s(np(det(a), n(man)), vp(v(shoots))),
-% L = [a, man, shoots] ;
+adj(adj(Word), AdjType) -->
+    [Word], {lex(Word, adj, _, _, _, AdjType)}.
+
+v(v(Word), Plurality, Person) --> 
+    [Word], {lex(Word, v, Plurality, _, Person, _)}.
+
+p(p(Word)) -->
+    [Word], {lex(Word, p, _, _, _, _)}.
