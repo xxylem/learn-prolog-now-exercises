@@ -13,10 +13,9 @@ lex(table,      n,      singular,   _,          _,          _).
 lex(tables,     n,      plural,     _,          _,          _).
 
 lex(shoots,     v,      singular,   _,          third,      _).
-lex(shoot,      v,      _,          _,          Person,     _) :-
-    Person \= third.
-lex(shoot,  v,      Plurality,      _,          _,          _) :-
-    Plurality \= singular.
+lex(shoot,      v,      Plurality,  _,          Person,     _) :-
+    Plurality = singular, \+ Person = third.
+lex(shoot,      v,      _,          _,          _,          _).
 
 lex(i,          pro,    singular,   subject,    first,      _).
 lex(me,         pro,    singular,   object,     first,      _).
